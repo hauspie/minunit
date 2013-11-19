@@ -19,7 +19,7 @@
 
 
 
-/* A sample test suite that should pass */
+/* A sample test suite that should pass (test the setup and teardown function)*/
 static int value;
 
 MU_SETUP(sampleTest)
