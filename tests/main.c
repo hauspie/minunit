@@ -23,35 +23,39 @@ static int value;
 MU_SETUP(sampleTest)
 {
     value = 0;
+    return 0;
 }
 
 MU_TEAR_DOWN(sampleTest)
 {
     MU_ASSERT_NOT_EQUAL(value,0);
+    return 0;
 }
 
 MU_TEST(sampleTest,test1)
 {
     MU_ASSERT_EQUAL(value,0);
     value = 1;
+    return 0;
 }
 
 MU_TEST(sampleTest,test2)
 {
     MU_ASSERT_EQUAL(value,0);
     value = 2;
+    return 0;
 }
 
 MU_TEST_SUITE(sampleTest) = {
-    MU_ADD_TEST(test1),
-    MU_ADD_TEST(test2),
+    MU_ADD_TEST(sampleTest,test1),
+    MU_ADD_TEST(sampleTest,test2),
     MU_TEST_SUITE_END
 };
 
 
 
-int main(int argc, char **argv)
+int main(void)
 {
-    mu_run_test_suite(sampleTest);
+    MU_RUN_TEST_SUITE(sampleTest);
     return 0;
 }
