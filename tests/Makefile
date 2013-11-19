@@ -12,7 +12,7 @@ all: $(EXE)
 $(EXE): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
 
-%.o: %.c
+%.o: %.c ../minunit.h
 	$(CC) $(CFLAGS) -o $@ -c $<
 
 clean:

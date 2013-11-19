@@ -18,6 +18,8 @@
 #include "../minunit.h"
 
 
+
+/* A sample test suite that should pass */
 static int value;
 
 MU_SETUP(sampleTest)
@@ -52,10 +54,68 @@ MU_TEST_SUITE(sampleTest) = {
     MU_TEST_SUITE_END
 };
 
+/* A test suite that will pass 2 tests out of 4 */
+MU_SETUP(half_success) {return 0;}
+MU_TEAR_DOWN(half_success) {return 0;}
+MU_TEST(half_success, success1) { MU_ASSERT_EQUAL(0, 0); return 0;}
+MU_TEST(half_success, success2) { MU_ASSERT_NOT_EQUAL(1, 0); return 0;}
+MU_TEST(half_success, fail1) { MU_ASSERT_EQUAL(0,1); return 0;}
+MU_TEST(half_success, fail2) { MU_ASSERT_NOT_EQUAL(0,0); return 0;}
+MU_TEST_SUITE(half_success) = {
+    MU_ADD_TEST(half_success, success1),
+    MU_ADD_TEST(half_success, success2),
+    MU_ADD_TEST(half_success, fail1),
+    MU_ADD_TEST(half_success, fail2),
+    MU_TEST_SUITE_END
+};
+
+
+/* A test suite that test that previous suite gets 2 succes out of 4 tests */
+MU_SETUP(test_half) {return 0;}
+MU_TEAR_DOWN(test_half) {return 0;}
+MU_TEST(test_half, run) {
+    int success, total;
+    /* Assert that the test suite fails (i.e. at least one test fail */
+    MU_ASSERT_EQUAL(MU_RUN_TEST_SUITE(half_success, &success, &total), -1);
+    MU_ASSERT_EQUAL(success, 2);
+    MU_ASSERT_EQUAL(total, 4);
+    return 0;
+}
+MU_TEST_SUITE(test_half) = {
+    MU_ADD_TEST(test_half, run),
+    MU_TEST_SUITE_END
+};
+
+/* A test suite that test all assertion operators */
+MU_SETUP(test_assertions) {return 0;}
+MU_TEAR_DOWN(test_assertions) {return 0;}
+MU_TEST(test_assertions, assert) {
+    MU_ASSERT( 0 == 0);
+    return 0;
+}
+
+MU_TEST(test_assertions, equal) {
+    MU_ASSERT_EQUAL(0,0);
+    return 0;
+}
+
+MU_TEST(test_assertions, notequal) {
+    MU_ASSERT_NOT_EQUAL(0,1);
+    return 0;
+}
+
+MU_TEST_SUITE(test_assertions) = {
+    MU_ADD_TEST(test_assertions, assert),
+    MU_ADD_TEST(test_assertions, equal),
+    MU_ADD_TEST(test_assertions, notequal),
+    MU_TEST_SUITE_END
+};
 
 
 int main(void)
 {
-    MU_RUN_TEST_SUITE(sampleTest);
+    MU_RUN_TEST_SUITE_WITH_REPORT(sampleTest);
+    MU_RUN_TEST_SUITE_WITH_REPORT(test_half);
+    MU_RUN_TEST_SUITE_WITH_REPORT(test_assertions);
     return 0;
 }
