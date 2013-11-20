@@ -31,31 +31,45 @@ extern "C" {
 #define MU_PRINT_CHAR(ch) printf("%c", (ch))
 
 /* Test declaration macro */
-
+    
 /* Type for test suite arrays */
-    typedef int (*test_func)(void);
+    struct mu_test_desc;
+    typedef void (*mu_test_func)(struct mu_test_desc *desc);
+    struct mu_test_desc{
+	mu_test_func test;
+	int success;
+	int performed;
+    };
 
-#define MU_SETUP(test_suite) int test_suite##_setup(void)
-#define MU_TEAR_DOWN(test_suite) int test_suite##_tear_down(void)
-#define MU_TEST(test_suite, test_name) int test_suite##_##test_name(void)
-#define MU_TEST_SUITE(test_suite) static test_func test_suite##_tests_array[]
+#define MU_SETUP(test_suite) void test_suite##_setup(struct mu_test_desc *desc)
+#define MU_TEAR_DOWN(test_suite) void test_suite##_tear_down(struct mu_test_desc *desc)
+#define MU_TEST(test_suite, test_name) void test_suite##_##test_name(struct mu_test_desc *desc)
+#define MU_TEST_SUITE(test_suite) static struct mu_test_desc test_suite##_tests_array[]
 
-#define MU_ADD_TEST(test_suite, test_name) test_suite##_##test_name
-#define MU_TEST_SUITE_END ((void*)0)
+#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, 0, 0}
+#define MU_TEST_SUITE_END {((void*)0),0,0}
+#define MU_DESC_SUCCESS(d) ((d)->success == (d)->performed)
 
-    static inline int mu_run_test_suite(test_func setup, test_func tear_down, test_func *tests_array, int *out_success, int *out_total)
+    static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
     {
 	int i;								
 	int success = 0;
-	for (i = 0 ; tests_array[i] != MU_TEST_SUITE_END ; ++i)
-	{									
-	    if (setup() == -1)					
-		continue;							
-	    if (tests_array[i]() == -1)			
-		continue;							
-	    if (tear_down() == -1)				
-		continue;							
-	    success++;							
+	for (i = 0 ; tests_array[i].test != ((void*)0) ; ++i)
+	{	
+	    struct mu_test_desc *desc = &tests_array[i];
+	    /* These needs to be 0 before running the test.  Of course, it is
+	       if the test is run for the first time, but this will ensure
+	       consistency when running the same test multiple times
+	    */
+	    desc->success = desc->performed = 0;
+	    setup(desc);
+	    /* If setup fails, do not run test */
+	    if (! MU_DESC_SUCCESS(desc))
+		continue;
+	    desc->test(desc);
+	    tear_down(desc);
+	    if (MU_DESC_SUCCESS(desc))
+		success++;
 	}
 	if (out_total)
 	    *out_total = i;
@@ -83,7 +97,11 @@ extern "C" {
     } while(0)
 
 /* Assertion macro */
-#define MU_ASSERT(test) if ( !(test) ) return -1;
+#define MU_ASSERT(test) do {				\
+	if ( (test) )					\
+	    desc->success++;				\
+	desc->performed++;				\
+    } while (0)
 #define MU_ASSERT_EQUAL(val_to_test,reference) MU_ASSERT((val_to_test) == (reference))
 #define MU_ASSERT_NOT_EQUAL(val_to_test,reference) MU_ASSERT((val_to_test) != (reference))
 
