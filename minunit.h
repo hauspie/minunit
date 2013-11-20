@@ -33,13 +33,14 @@ extern "C" {
 /* Test declaration macro */
     
 /* Type for test suite arrays */
-    struct mu_test_desc;
-    typedef void (*mu_test_func)(struct mu_test_desc *desc);
-    struct mu_test_desc{
-	mu_test_func test;
-	int success;
-	int performed;
-    };
+struct mu_test_desc;
+typedef void (*mu_test_func)(struct mu_test_desc *desc);
+struct mu_test_desc 
+{
+    mu_test_func test;
+    int success;
+    int performed;
+};
 
 #define MU_SETUP(test_suite) void test_suite##_setup(struct mu_test_desc *desc)
 #define MU_TEAR_DOWN(test_suite) void test_suite##_tear_down(struct mu_test_desc *desc)
@@ -50,35 +51,35 @@ extern "C" {
 #define MU_TEST_SUITE_END {((void*)0),0,0}
 #define MU_DESC_SUCCESS(d) ((d)->success == (d)->performed)
 
-    static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
-    {
-	int i;								
-	int success = 0;
-	for (i = 0 ; tests_array[i].test != ((void*)0) ; ++i)
-	{	
-	    struct mu_test_desc *desc = &tests_array[i];
-	    /* These needs to be 0 before running the test.  Of course, it is
-	       if the test is run for the first time, but this will ensure
-	       consistency when running the same test multiple times
-	    */
-	    desc->success = desc->performed = 0;
-	    setup(desc);
-	    /* If setup fails, do not run test */
-	    if (! MU_DESC_SUCCESS(desc))
-		continue;
-	    desc->test(desc);
-	    tear_down(desc);
-	    if (MU_DESC_SUCCESS(desc))
-		success++;
-	}
-	if (out_total)
-	    *out_total = i;
-	if (out_success)
-	    *out_success = success;
-	if (i == success)
-	    return 0;
-	return -1;
+static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
+{
+    int i;								
+    int success = 0;
+    for (i = 0 ; tests_array[i].test != ((void*)0) ; ++i)
+    {	
+	struct mu_test_desc *desc = &tests_array[i];
+	/* These needs to be 0 before running the test.  Of course, it is
+	   if the test is run for the first time, but this will ensure
+	   consistency when running the same test multiple times
+	*/
+	desc->success = desc->performed = 0;
+	setup(desc);
+	/* If setup fails, do not run test */
+	if (! MU_DESC_SUCCESS(desc))
+	    continue;
+	desc->test(desc);
+	tear_down(desc);
+	if (MU_DESC_SUCCESS(desc))
+	    success++;
     }
+    if (out_total)
+	*out_total = i;
+    if (out_success)
+	*out_success = success;
+    if (i == success)
+	return 0;
+    return -1;
+}
 
 #define MU_RUN_TEST_SUITE(test_suite, success, total) mu_run_test_suite(test_suite##_setup, test_suite##_tear_down, test_suite##_tests_array, (success), (total))
 #define MU_REPORT(test_suite, success, total)				\
