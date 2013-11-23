@@ -38,6 +38,7 @@ typedef void (*mu_test_func)(struct mu_test_desc *desc);
 struct mu_test_desc 
 {
     mu_test_func test;
+    const char *test_name;
     int success;
     int performed;
 };
@@ -47,9 +48,9 @@ struct mu_test_desc
 #define MU_TEST(test_suite, test_name) void test_suite##_##test_name(struct mu_test_desc *desc)
 #define MU_TEST_SUITE(test_suite) static struct mu_test_desc test_suite##_tests_array[]
 
-#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, 0, 0}
+#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name, 0, 0}
 #define MU_TEST_SUITE_END {((void*)0),0,0}
-#define MU_DESC_SUCCESS(d) ((d)->success == (d)->performed)
+#define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
 static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
 {
@@ -64,9 +65,6 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
 	*/
 	desc->success = desc->performed = 0;
 	setup(desc);
-	/* If setup fails, do not run test */
-	if (! MU_DESC_SUCCESS(desc))
-	    continue;
 	desc->test(desc);
 	tear_down(desc);
 	if (MU_DESC_SUCCESS(desc))
@@ -103,8 +101,8 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
 	    desc->success++;				\
 	desc->performed++;				\
     } while (0)
-#define MU_ASSERT_EQUAL(val_to_test,reference) MU_ASSERT((val_to_test) == (reference))
-#define MU_ASSERT_NOT_EQUAL(val_to_test,reference) MU_ASSERT((val_to_test) != (reference))
+#define MU_ASSERT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) == (expected))
+#define MU_ASSERT_NOT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) != (expected))
 
 
 #ifdef __cplusplus
