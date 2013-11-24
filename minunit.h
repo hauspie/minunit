@@ -30,6 +30,10 @@ extern "C" {
 #define MU_PRINT_INT(val) printf("%d", (val))
 #define MU_PRINT_CHAR(ch) printf("%c", (ch))
 
+#ifndef NULL
+#define NULL ((void*)0)
+#endif
+
 /* Test declaration macro */
     
 /* Type for test suite arrays */
@@ -48,21 +52,21 @@ struct mu_test_desc
 #define MU_TEST(test_suite, test_name) void test_suite##_##test_name(struct mu_test_desc *desc)
 #define MU_TEST_SUITE(test_suite) static struct mu_test_desc test_suite##_tests_array[]
 
-#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name, 0, 0}
-#define MU_TEST_SUITE_END {((void*)0),0,0}
+#define STR_HELPER(x) #x
+#define STR(x) STR_HELPER(x)
+
+#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name "(" __FILE__ ":" STR(__LINE__) ")", 0, 0}
+#define MU_TEST_SUITE_END {NULL,0,0}
 #define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
 static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
 {
     int i;								
     int success = 0;
-    for (i = 0 ; tests_array[i].test != ((void*)0) ; ++i)
+    for (i = 0 ; tests_array[i].test != NULL ; ++i)
     {	
 	struct mu_test_desc *desc = &tests_array[i];
-	/* These needs to be 0 before running the test.  Of course, it is
-	   if the test is run for the first time, but this will ensure
-	   consistency when running the same test multiple times
-	*/
+	/* These needs to be 0 before running the test.	*/
 	desc->success = desc->performed = 0;
 	setup(desc);
 	desc->test(desc);
@@ -79,20 +83,42 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
     return -1;
 }
 
+    static inline void mu_report_test_suite(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+    {
+	MU_PRINT_STR("Suite ");
+	MU_PRINT_STR(suite_name);
+	MU_PRINT_STR(": ");
+	MU_PRINT_INT(success);
+	MU_PRINT_CHAR('/');
+	MU_PRINT_INT(total);
+	MU_PRINT_CHAR('\n');
+	if (success != total)
+	{
+	    int i;
+	    MU_PRINT_STR("\tFailing tests:\n");
+	    for (i = 0 ; tests_array[i].test != NULL ; ++i)
+	    {
+		struct mu_test_desc *desc = &tests_array[i];
+		if (!MU_DESC_SUCCESS(desc))
+		{
+		    MU_PRINT_STR("\t\t");
+		    MU_PRINT_STR(desc->test_name);
+		    MU_PRINT_STR(": ");
+		    MU_PRINT_INT(desc->success);
+		    MU_PRINT_CHAR('/');
+		    MU_PRINT_INT(desc->performed);
+		    MU_PRINT_CHAR('\n');
+		}
+	    }
+	}
+    }
+
 #define MU_RUN_TEST_SUITE(test_suite, success, total) mu_run_test_suite(test_suite##_setup, test_suite##_tear_down, test_suite##_tests_array, (success), (total))
-#define MU_REPORT(test_suite, success, total)				\
-    do {								\
-	MU_PRINT_STR("Suite " #test_suite " ");				\
-	MU_PRINT_INT(success);						\
-	MU_PRINT_CHAR('/');						\
-	MU_PRINT_INT(total);						\
-	MU_PRINT_STR(" succeeded\n");					\
-    } while(0)
-#define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {	\
-    int success = 0;					\
-    int total = 0;					\
-    MU_RUN_TEST_SUITE(test_suite, &success, &total);	\
-    MU_REPORT(test_suite, success, total);		\
+#define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {		\
+	int success = 0;					\
+	int total = 0;						\
+	MU_RUN_TEST_SUITE(test_suite, &success, &total);	\
+	mu_report_test_suite(#test_suite, test_suite##_tests_array, success, total); \
     } while(0)
 
 /* Assertion macro */
@@ -103,7 +129,7 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
     } while (0)
 #define MU_ASSERT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) == (expected))
 #define MU_ASSERT_NOT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) != (expected))
-
+#define MU_ASSERT_LESS(val_to_test, expected) MU_ASSERT((val_to_test) < (expected))
 
 #ifdef __cplusplus
 } /* extern 'C' */
