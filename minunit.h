@@ -104,10 +104,17 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
 		    MU_PRINT_STR("\t\t");
 		    MU_PRINT_STR(desc->test_name);
 		    MU_PRINT_STR(": ");
-		    MU_PRINT_INT(desc->success);
-		    MU_PRINT_CHAR('/');
-		    MU_PRINT_INT(desc->performed);
-		    MU_PRINT_CHAR('\n');
+		    if (desc->performed != 0)
+		    {
+			MU_PRINT_INT(desc->success);
+			MU_PRINT_CHAR('/');
+			MU_PRINT_INT(desc->performed);
+			MU_PRINT_STR(" passed\n");
+		    }
+		    else
+		    {
+			MU_PRINT_STR("no test performed\n");
+		    }
 		}
 	    }
 	}
