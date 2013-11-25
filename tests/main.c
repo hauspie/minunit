@@ -110,6 +110,7 @@ int main(void)
     MU_RUN_TEST_SUITE_WITH_REPORT(test_half);
     MU_RUN_TEST_SUITE_WITH_REPORT(test_assertions);
     /* Test the sample output of failing tests by running the failing test */
+    MU_PRINT_STR("The next suite will fail on purpose\n");
     MU_RUN_TEST_SUITE_WITH_REPORT(half_success);
     return 0;
 }

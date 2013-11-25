@@ -24,11 +24,13 @@ extern "C" {
 
 /* Output macro */
 
-/* these will be changed later for platforms that do not have printf */
-#include <stdio.h>
-#define MU_PRINT_STR(str) printf("%s", (str))
-#define MU_PRINT_INT(val) printf("%d", (val))
-#define MU_PRINT_CHAR(ch) printf("%c", (ch))
+/* Define these before including minunit.h to use something else than printf */
+#ifndef MU_PRINT_STR
+  #include <stdio.h>
+  #define MU_PRINT_STR(str) printf("%s", (str))
+  #define MU_PRINT_INT(val) printf("%d", (val))
+  #define MU_PRINT_CHAR(ch) printf("%c", (ch))
+#endif
 
 #ifndef NULL
 #define NULL ((void*)0)
