@@ -52,6 +52,7 @@ struct mu_test_desc
 #define MU_TEST(test_suite, test_name) void test_suite##_##test_name(struct mu_test_desc *desc)
 #define MU_TEST_SUITE(test_suite) static struct mu_test_desc test_suite##_tests_array[]
 
+/* Convert non string litteral to string using preprocessor */
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
 
@@ -83,42 +84,42 @@ static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, 
     return -1;
 }
 
-    static inline void mu_report_test_suite(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+static inline void mu_report_test_suite(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+{
+    MU_PRINT_STR("Suite ");
+    MU_PRINT_STR(suite_name);
+    MU_PRINT_STR(": ");
+    MU_PRINT_INT(success);
+    MU_PRINT_CHAR('/');
+    MU_PRINT_INT(total);
+    MU_PRINT_CHAR('\n');
+    if (success != total)
     {
-	MU_PRINT_STR("Suite ");
-	MU_PRINT_STR(suite_name);
-	MU_PRINT_STR(": ");
-	MU_PRINT_INT(success);
-	MU_PRINT_CHAR('/');
-	MU_PRINT_INT(total);
-	MU_PRINT_CHAR('\n');
-	if (success != total)
+	int i;
+	MU_PRINT_STR("\tFailing tests:\n");
+	for (i = 0 ; tests_array[i].test != NULL ; ++i)
 	{
-	    int i;
-	    MU_PRINT_STR("\tFailing tests:\n");
-	    for (i = 0 ; tests_array[i].test != NULL ; ++i)
+	    struct mu_test_desc *desc = &tests_array[i];
+	    if (!MU_DESC_SUCCESS(desc))
 	    {
-		struct mu_test_desc *desc = &tests_array[i];
-		if (!MU_DESC_SUCCESS(desc))
+		MU_PRINT_STR("\t\t");
+		MU_PRINT_STR(desc->test_name);
+		MU_PRINT_STR(": ");
+		if (desc->performed != 0)
 		{
-		    MU_PRINT_STR("\t\t");
-		    MU_PRINT_STR(desc->test_name);
-		    MU_PRINT_STR(": ");
-		    if (desc->performed != 0)
-		    {
-			MU_PRINT_INT(desc->success);
-			MU_PRINT_CHAR('/');
-			MU_PRINT_INT(desc->performed);
-			MU_PRINT_STR(" passed\n");
-		    }
-		    else
-		    {
-			MU_PRINT_STR("no test performed\n");
-		    }
+		    MU_PRINT_INT(desc->success);
+		    MU_PRINT_CHAR('/');
+		    MU_PRINT_INT(desc->performed);
+		    MU_PRINT_STR(" passed\n");
+		}
+		else
+		{
+		    MU_PRINT_STR("no test performed\n");
 		}
 	    }
 	}
     }
+}
 
 #define MU_RUN_TEST_SUITE(test_suite, success, total) mu_run_test_suite(test_suite##_setup, test_suite##_tear_down, test_suite##_tests_array, (success), (total))
 #define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {		\
