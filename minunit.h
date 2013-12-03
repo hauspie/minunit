@@ -59,7 +59,7 @@ struct mu_test_desc
 #define STR(x) STR_HELPER(x)
 
 #define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name "(" __FILE__ ":" STR(__LINE__) ")", 0, 0}
-#define MU_TEST_SUITE_END {NULL,0,0}
+#define MU_TEST_SUITE_END {NULL,NULL,0,0}
 #define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
 static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
