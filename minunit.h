@@ -140,6 +140,7 @@ static inline void mu_report_test_suite(const char *suite_name, struct mu_test_d
 #define MU_ASSERT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) == (expected))
 #define MU_ASSERT_NOT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) != (expected))
 #define MU_ASSERT_LESS(val_to_test, expected) MU_ASSERT((val_to_test) < (expected))
+#define MU_ASSERT_GREATER(val_to_test, expected) MU_ASSERT((val_to_test) > (expected))
 
 #ifdef __cplusplus
 } /* extern 'C' */
