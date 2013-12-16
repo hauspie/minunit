@@ -1,17 +1,17 @@
 /*
   Minunit is a very minimal library for performing unit tests in C.
   Copyright (C) 2013 Michaël Hauspie
-  
+
   This program is free software: you can redistribute it and/or modify
   it under the terms of the GNU General Public License as published by
   the Free Software Foundation, either version 3 of the License, or
   (at your option) any later version.
-  
+
   This program is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
-  
+
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -26,10 +26,10 @@ extern "C" {
 
 /* Define these before including minunit.h to use something else than printf */
 #ifndef MU_PRINT_STR
-  #include <stdio.h>
-  #define MU_PRINT_STR(str) printf("%s", (str))
-  #define MU_PRINT_INT(val) printf("%d", (val))
-  #define MU_PRINT_CHAR(ch) printf("%c", (ch))
+#include <stdio.h>
+#define MU_PRINT_STR(str) printf("%s", (str))
+#define MU_PRINT_INT(val) printf("%d", (val))
+#define MU_PRINT_CHAR(ch) printf("%c", (ch))
 #endif
 
 #ifndef NULL
@@ -37,17 +37,17 @@ extern "C" {
 #endif
 
 /* Test declaration macro */
-    
+
 /* Type for test suite arrays */
-struct mu_test_desc;
-typedef void (*mu_test_func)(struct mu_test_desc *desc);
-struct mu_test_desc 
-{
-    mu_test_func test;
-    const char *test_name;
-    int success;
-    int performed;
-};
+    struct mu_test_desc;
+    typedef void (*mu_test_func)(struct mu_test_desc *desc);
+    struct mu_test_desc
+    {
+	mu_test_func test;
+	const char *test_name;
+	int success;
+	int performed;
+    };
 
 #define MU_SETUP(test_suite) void test_suite##_setup(struct mu_test_desc *desc)
 #define MU_TEAR_DOWN(test_suite) void test_suite##_tear_down(struct mu_test_desc *desc)
@@ -59,88 +59,124 @@ struct mu_test_desc
 #define STR(x) STR_HELPER(x)
 
 #define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name "(" __FILE__ ":" STR(__LINE__) ")", 0, 0}
-#define MU_TEST_SUITE_END {NULL,NULL,0,0}
+#define MU_TEST_SUITE_END {NULL,0,0}
 #define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
-static inline int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
-{
-    int i;								
-    int success = 0;
-    for (i = 0 ; tests_array[i].test != NULL ; ++i)
-    {	
-	struct mu_test_desc *desc = &tests_array[i];
-	/* These needs to be 0 before running the test.	*/
-	desc->success = desc->performed = 0;
-	setup(desc);
-	desc->test(desc);
-	tear_down(desc);
-	if (MU_DESC_SUCCESS(desc))
-	    success++;
-    }
-    if (out_total)
-	*out_total = i;
-    if (out_success)
-	*out_success = success;
-    if (i == success)
-	return 0;
-    return -1;
-}
-
-static inline void mu_report_test_suite(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
-{
-    MU_PRINT_STR("Suite ");
-    MU_PRINT_STR(suite_name);
-    MU_PRINT_STR(": ");
-    MU_PRINT_INT(success);
-    MU_PRINT_CHAR('/');
-    MU_PRINT_INT(total);
-    MU_PRINT_CHAR('\n');
-    if (success != total)
+    static int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
     {
 	int i;
-	MU_PRINT_STR("\tFailing tests:\n");
+	int success = 0;
 	for (i = 0 ; tests_array[i].test != NULL ; ++i)
 	{
 	    struct mu_test_desc *desc = &tests_array[i];
-	    if (!MU_DESC_SUCCESS(desc))
+	    /* These needs to be 0 before running the test.	*/
+	    desc->success = desc->performed = 0;
+	    setup(desc);
+	    desc->test(desc);
+	    tear_down(desc);
+	    if (MU_DESC_SUCCESS(desc))
+		success++;
+	}
+	if (out_total)
+	    *out_total = i;
+	if (out_success)
+	    *out_success = success;
+	if (i == success) return 0;
+	return -1;
+    }
+
+    static void mu_report_test_suite_heading(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+    {
+	MU_PRINT_STR("Suite ");
+	MU_PRINT_STR(suite_name);
+	MU_PRINT_STR(": ");
+    }
+
+    static void mu_report_test_suite_summary(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+    {
+	if (success != total)
+	{
+	    MU_PRINT_STR("\n\t") ;
+	    MU_PRINT_STR("Suite summary (success/total) : ");
+	}
+	MU_PRINT_INT(success);
+	MU_PRINT_CHAR('/');
+	MU_PRINT_INT(total);
+	MU_PRINT_CHAR('\n');
+	if (success != total)
+	{
+	    int i;
+	    MU_PRINT_STR("\tFailing tests:\n");
+	    for (i = 0 ; tests_array[i].test != NULL ; ++i)
 	    {
-		MU_PRINT_STR("\t\t");
-		MU_PRINT_STR(desc->test_name);
-		MU_PRINT_STR(": ");
-		if (desc->performed != 0)
+		struct mu_test_desc *desc = &tests_array[i];
+		if (!MU_DESC_SUCCESS(desc))
 		{
-		    MU_PRINT_INT(desc->success);
-		    MU_PRINT_CHAR('/');
-		    MU_PRINT_INT(desc->performed);
-		    MU_PRINT_STR(" passed\n");
-		}
-		else
-		{
-		    MU_PRINT_STR("no test performed\n");
+		    MU_PRINT_STR("\t\t");
+		    MU_PRINT_STR(desc->test_name);
+		    MU_PRINT_STR(": ");
+		    if (desc->performed != 0)
+		    {
+			MU_PRINT_INT(desc->success);
+			MU_PRINT_CHAR('/');
+			MU_PRINT_INT(desc->performed);
+			MU_PRINT_STR(" passed\n");
+		    }
+		    else
+		    {
+			MU_PRINT_STR("no test performed\n");
+		    }
 		}
 	    }
 	}
     }
-}
 
 #define MU_RUN_TEST_SUITE(test_suite, success, total) mu_run_test_suite(test_suite##_setup, test_suite##_tear_down, test_suite##_tests_array, (success), (total))
-#define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {		\
-	int success = 0;					\
-	int total = 0;						\
-	MU_RUN_TEST_SUITE(test_suite, &success, &total);	\
-	mu_report_test_suite(#test_suite, test_suite##_tests_array, success, total); \
+#define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {			\
+	int success = 0;						\
+	int total = 0;							\
+	mu_report_test_suite_heading(#test_suite, test_suite##_tests_array, success, total); \
+	MU_RUN_TEST_SUITE(test_suite, &success, &total);		\
+	mu_report_test_suite_summary(#test_suite, test_suite##_tests_array, success, total); \
     } while(0)
 
 /* Assertion macro */
-#define MU_ASSERT(test) do {				\
+#define MU_ASSERT_NOPRINT(test) do {			\
 	if ( (test) )					\
 	    desc->success++;				\
+    desc->performed++;					\
+    } while (0)						\
+	
+#define MU_ASSERT_PRINT(test,file,line) do {		\
+	if ( (test) )					\
+	    desc->success++;				\
+	else {						\
+	    MU_PRINT_STR("\n\t* Assert failed ") ;	\
+	    MU_PRINT_STR("[") ;				\
+	    MU_PRINT_STR(desc->test_name) ;		\
+	    MU_PRINT_STR("] (") ;			\
+	    MU_PRINT_STR(file) ;			\
+	    MU_PRINT_STR(" : ")  ;			\
+	    MU_PRINT_INT(line) ;			\
+	    MU_PRINT_STR(") ") ;			\
+	}						\
 	desc->performed++;				\
     } while (0)
+
+/* Define this macro to enable verbose assert */
+/* #define MU_ASSERT_USE_PRINT */
+#ifdef MU_ASSERT_USE_PRINT
+#define MU_ASSERT(a) MU_ASSERT_PRINT((a), __FILE__, __LINE__)
+#else
+#define MU_ASSERT(a) MU_ASSERT_NOPRINT((a))
+#endif
+
 #define MU_ASSERT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) == (expected))
 #define MU_ASSERT_NOT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) != (expected))
 #define MU_ASSERT_LESS(val_to_test, expected) MU_ASSERT((val_to_test) < (expected))
 #define MU_ASSERT_GREATER(val_to_test, expected) MU_ASSERT((val_to_test) > (expected))
+#define MU_ASSERT_TRUE(val_to_test) MU_ASSERT((val_to_test))
+#define MU_ASSERT_FALSE(val_to_test) MU_ASSERT(!(val_to_test))
 
 #ifdef __cplusplus
 } /* extern 'C' */
