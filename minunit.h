@@ -32,12 +32,17 @@ extern "C" {
 #define MU_PRINT_CHAR(ch) printf("%c", (ch))
 #endif
 
+/* Define this macro to enable verbose assert */
+#define MU_ASSERT_USE_PRINT 
+
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
 
 /* Test declaration macro */
-
+#define MAX_REPORTED_FAILED (5)
+#define INIT_FAILED 0,NULL,{-1,-1,-1,-1,-1}
+/* 0,NULL,-1,-1,-1,-1,-1    */
 /* Type for test suite arrays */
     struct mu_test_desc;
     typedef void (*mu_test_func)(struct mu_test_desc *desc);
@@ -47,6 +52,10 @@ extern "C" {
 	const char *test_name;
 	int success;
 	int performed;
+	/* space to record failed asserts */
+	int failed ;
+    const char *filename ;
+	int detail[MAX_REPORTED_FAILED] ;
     };
 
 #define MU_SETUP(test_suite) void test_suite##_setup(struct mu_test_desc *desc)
@@ -57,9 +66,9 @@ extern "C" {
 /* Convert non string litteral to string using preprocessor */
 #define STR_HELPER(x) #x
 #define STR(x) STR_HELPER(x)
-
-#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name "(" __FILE__ ":" STR(__LINE__) ")", 0, 0}
-#define MU_TEST_SUITE_END {NULL,0,0}
+    
+#define MU_ADD_TEST(test_suite, test_name) {test_suite##_##test_name, #test_name "(" __FILE__ ":" STR(__LINE__) ")", 0, 0, INIT_FAILED}
+#define MU_TEST_SUITE_END {NULL,NULL,0,0,INIT_FAILED}
 #define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
     static int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
@@ -70,7 +79,7 @@ extern "C" {
 	{
 	    struct mu_test_desc *desc = &tests_array[i];
 	    /* These needs to be 0 before running the test.	*/
-	    desc->success = desc->performed = 0;
+	    desc->success = desc->performed = desc->failed = 0;
 	    setup(desc);
 	    desc->test(desc);
 	    tear_down(desc);
@@ -85,20 +94,11 @@ extern "C" {
 	return -1;
     }
 
-    static void mu_report_test_suite_heading(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+    static void mu_report_test_suite_report(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
     {
 	MU_PRINT_STR("Suite ");
 	MU_PRINT_STR(suite_name);
 	MU_PRINT_STR(": ");
-    }
-
-    static void mu_report_test_suite_summary(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
-    {
-	if (success != total)
-	{
-	    MU_PRINT_STR("\n\t") ;
-	    MU_PRINT_STR("Suite summary (success/total) : ");
-	}
 	MU_PRINT_INT(success);
 	MU_PRINT_CHAR('/');
 	MU_PRINT_INT(total);
@@ -120,7 +120,32 @@ extern "C" {
 			MU_PRINT_INT(desc->success);
 			MU_PRINT_CHAR('/');
 			MU_PRINT_INT(desc->performed);
-			MU_PRINT_STR(" passed\n");
+			MU_PRINT_STR(" passed");
+#ifdef MU_ASSERT_USE_PRINT
+			{
+				int j ;
+				MU_PRINT_STR(" [") ;
+				MU_PRINT_STR(desc->filename) ;
+				MU_PRINT_STR(" : ") ;
+				for (j = 0 ; j < desc->failed ; j++) 
+	                        {
+	                            if (j < MAX_REPORTED_FAILED) 
+	                            {
+	                                    MU_PRINT_INT(desc->detail[j]) ;
+	                                    if (j != desc->failed-1) 
+	                                    {
+	                                        MU_PRINT_STR(", ") ;
+	                                    }
+	                            } 
+	                            else 
+	                            {
+	                            	MU_PRINT_STR(".") ;
+	                            }
+			}
+			MU_PRINT_STR(" ]") ;
+			}
+#endif
+		    MU_PRINT_STR("\n") ;
 		    }
 		    else
 		    {
@@ -135,10 +160,16 @@ extern "C" {
 #define MU_RUN_TEST_SUITE_WITH_REPORT(test_suite) do {			\
 	int success = 0;						\
 	int total = 0;							\
-	mu_report_test_suite_heading(#test_suite, test_suite##_tests_array, success, total); \
 	MU_RUN_TEST_SUITE(test_suite, &success, &total);		\
-	mu_report_test_suite_summary(#test_suite, test_suite##_tests_array, success, total); \
+	mu_report_test_suite_report(#test_suite, test_suite##_tests_array, success, total); \
     } while(0)
+
+#define MU_RECORD(file, line) do { \
+    if (desc->failed < MAX_REPORTED_FAILED) {   \
+        desc->detail[desc->failed] = line ; \
+        desc->filename = file ; \
+    }   \
+} while (0)
 
 /* Assertion macro */
 #define MU_ASSERT_NOPRINT(test) do {			\
@@ -146,25 +177,17 @@ extern "C" {
 	    desc->success++;				\
     desc->performed++;					\
     } while (0)						\
-	
+
 #define MU_ASSERT_PRINT(test,file,line) do {		\
 	if ( (test) )					\
 	    desc->success++;				\
 	else {						\
-	    MU_PRINT_STR("\n\t* Assert failed ") ;	\
-	    MU_PRINT_STR("[") ;				\
-	    MU_PRINT_STR(desc->test_name) ;		\
-	    MU_PRINT_STR("] (") ;			\
-	    MU_PRINT_STR(file) ;			\
-	    MU_PRINT_STR(" : ")  ;			\
-	    MU_PRINT_INT(line) ;			\
-	    MU_PRINT_STR(") ") ;			\
+	    MU_RECORD(file, line) ;	\
+        desc->failed++ ;    \
 	}						\
 	desc->performed++;				\
     } while (0)
 
-/* Define this macro to enable verbose assert */
-/* #define MU_ASSERT_USE_PRINT */
 #ifdef MU_ASSERT_USE_PRINT
 #define MU_ASSERT(a) MU_ASSERT_PRINT((a), __FILE__, __LINE__)
 #else
