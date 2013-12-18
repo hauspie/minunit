@@ -15,6 +15,19 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
+
+/**
+ * @file   minunit.h
+ * @author Michaël HAUSPIE <michael.hauspie@univ-lille1.fr>
+ * @date   Wed Dec 18 14:16:31 2013
+ * 
+ * @brief  Provides a minimal, one file, unit testing framework.
+ * 
+ * To use the framework, simply include this file in a .c file that implements tests.
+ * If you want to get precise assertion failed report, define ::MU_RECORD_PRECISE_FAILED_ASSERTS
+ * either before including this file or with -DMU_RECORD_PRECISE_FAILED_ASSERTS compile option.
+ */
+
 #ifndef __MINUNIT_H__
 #define __MINUNIT_H__
 
@@ -33,15 +46,20 @@ extern "C" {
 #endif
 
 /* Define this macro to enable verbose assert */
-#define MU_ASSERT_USE_PRINT 
+/* #define MU_RECORD_PRECISE_FAILED_ASSERTS */
 
 #ifndef NULL
 #define NULL ((void*)0)
 #endif
 
 /* Test declaration macro */
-#define MAX_REPORTED_FAILED (5)
-#define INIT_FAILED 0,NULL,{-1,-1,-1,-1,-1}
+#ifdef MU_RECORD_PRECISE_FAILED_ASSERTS
+   #define MAX_REPORTED_FAILED (5)
+   #define INIT_FAILED 0,NULL,{-1,-1,-1,-1,-1}
+#else
+   #define INIT_FAILED
+#endif
+
 /* 0,NULL,-1,-1,-1,-1,-1    */
 /* Type for test suite arrays */
     struct mu_test_desc;
@@ -52,10 +70,12 @@ extern "C" {
 	const char *test_name;
 	int success;
 	int performed;
+#ifdef MU_RECORD_PRECISE_FAILED_ASSERTS
 	/* space to record failed asserts */
 	int failed;
 	const char *filename;
-	int detail[MAX_REPORTED_FAILED] ;
+	int detail[MAX_REPORTED_FAILED];
+#endif
     };
 
 #define MU_SETUP(test_suite) void test_suite##_setup(struct mu_test_desc *desc)
@@ -79,7 +99,10 @@ extern "C" {
 	{
 	    struct mu_test_desc *desc = &tests_array[i];
 	    /* These needs to be 0 before running the test.	*/
-	    desc->success = desc->performed = desc->failed = 0;
+	    desc->success = desc->performed = 0;
+#ifdef MU_RECORD_PRECISE_FAILED_ASSERTS
+	    desc->failed = 0;
+#endif
 	    setup(desc);
 	    desc->test(desc);
 	    tear_down(desc);
@@ -121,7 +144,7 @@ extern "C" {
 			MU_PRINT_CHAR('/');
 			MU_PRINT_INT(desc->performed);
 			MU_PRINT_STR(" passed");
-#ifdef MU_ASSERT_USE_PRINT
+#ifdef MU_RECORD_PRECISE_FAILED_ASSERTS
 			{
 			    int j ;
 			    MU_PRINT_STR(" [") ;
@@ -164,35 +187,28 @@ extern "C" {
 	mu_report_test_suite_report(#test_suite, test_suite##_tests_array, success, total); \
     } while(0)
 
-#define MU_RECORD(file, line) do {			\
-	if (desc->failed < MAX_REPORTED_FAILED) {	\
-	    desc->detail[desc->failed] = line ;		\
-	    desc->filename = file ;			\
-	}						\
+#ifdef MU_RECORD_PRECISE_FAILED_ASSERTS
+#define MU_RECORD(file, line) do {				\
+	if (desc->failed < MAX_REPORTED_FAILED) {		\
+	    desc->detail[desc->failed++] = line ;		\
+	    desc->filename = file ;				\
+	}							\
     } while (0)
+#else
+#define MU_RECORD(file, line) do {} while(0)
+#endif
 
 /* Assertion macro */
-#define MU_ASSERT_NOPRINT(test) do {		\
-	if ( (test) )				\
-	    desc->success++;			\
-	desc->performed++;			\
-    } while (0)					\
-
-#define MU_ASSERT_PRINT(test,file,line) do {	\
+#define MU_ASSERT_DETAILS(test,file,line) do {	\
 	if ( (test) )				\
 	    desc->success++;			\
 	else {					\
 	    MU_RECORD(file, line) ;		\
-	    desc->failed++ ;			\
 	}					\
 	desc->performed++;			\
     } while (0)
 
-#ifdef MU_ASSERT_USE_PRINT
-#define MU_ASSERT(a) MU_ASSERT_PRINT((a), __FILE__, __LINE__)
-#else
-#define MU_ASSERT(a) MU_ASSERT_NOPRINT((a))
-#endif
+#define MU_ASSERT(a) MU_ASSERT_DETAILS((a), __FILE__, __LINE__)
 
 #define MU_ASSERT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) == (expected))
 #define MU_ASSERT_NOT_EQUAL(val_to_test,expected) MU_ASSERT((val_to_test) != (expected))
