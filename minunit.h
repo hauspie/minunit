@@ -23,9 +23,13 @@
  * 
  * @brief  Provides a minimal, one file, unit testing framework.
  * 
- * To use the framework, simply include this file in a .c file that implements tests.
- * If you want to get precise assertion failed report, define ::MU_RECORD_PRECISE_FAILED_ASSERTS
- * either before including this file or with -DMU_RECORD_PRECISE_FAILED_ASSERTS compile option.
+ * The main goal of this framework is to be completly libc independent if you
+ * need. That is, it can be used without malloc, printf or any standard
+ * function. You can thus use it in a baremetal system. To use the framework,
+ * simply include this file in a .c file that implements tests.  If you want to
+ * get precise assertion failed report, define
+ * ::MU_RECORD_PRECISE_FAILED_ASSERTS either before including this file or with
+ * -DMU_RECORD_PRECISE_FAILED_ASSERTS compile option.
  */
 
 #ifndef __MINUNIT_H__
@@ -44,9 +48,6 @@ extern "C" {
 #define MU_PRINT_INT(val) printf("%d", (val))
 #define MU_PRINT_CHAR(ch) printf("%c", (ch))
 #endif
-
-/* Define this macro to enable verbose assert */
-/* #define MU_RECORD_PRECISE_FAILED_ASSERTS */
 
 #ifndef NULL
 #define NULL ((void*)0)
