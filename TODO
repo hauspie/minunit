@@ -1,3 +1,2 @@
-- Think of a good way to report which test fails
 - Make the report more "machine" readable and let pretty print be done by other tool
 - Create a tool that generates the "pain" parts of tests (mainly the MU_TEST_SUITE array macros calls)
