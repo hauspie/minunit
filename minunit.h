@@ -53,8 +53,8 @@ extern "C" {
 	int success;
 	int performed;
 	/* space to record failed asserts */
-	int failed ;
-    const char *filename ;
+	int failed;
+	const char *filename;
 	int detail[MAX_REPORTED_FAILED] ;
     };
 
@@ -123,29 +123,29 @@ extern "C" {
 			MU_PRINT_STR(" passed");
 #ifdef MU_ASSERT_USE_PRINT
 			{
-				int j ;
-				MU_PRINT_STR(" [") ;
-				MU_PRINT_STR(desc->filename) ;
-				MU_PRINT_STR(" : ") ;
-				for (j = 0 ; j < desc->failed ; j++) 
-	                        {
-	                            if (j < MAX_REPORTED_FAILED) 
-	                            {
-	                                    MU_PRINT_INT(desc->detail[j]) ;
-	                                    if (j != desc->failed-1) 
-	                                    {
-	                                        MU_PRINT_STR(", ") ;
-	                                    }
-	                            } 
-	                            else 
-	                            {
-	                            	MU_PRINT_STR(".") ;
-	                            }
-			}
-			MU_PRINT_STR(" ]") ;
+			    int j ;
+			    MU_PRINT_STR(" [") ;
+			    MU_PRINT_STR(desc->filename) ;
+			    MU_PRINT_STR(":") ;
+			    for (j = 0 ; j < desc->failed ; j++) 
+			    {
+				if (j < MAX_REPORTED_FAILED) 
+				{
+				    MU_PRINT_INT(desc->detail[j]) ;
+				    if (j != desc->failed-1) 
+				    {
+					MU_PRINT_STR(", ") ;
+				    }
+				} 
+				else 
+				{
+				    MU_PRINT_STR(".") ;
+				}
+			    }
+			    MU_PRINT_STR("]") ;
 			}
 #endif
-		    MU_PRINT_STR("\n") ;
+			MU_PRINT_STR("\n") ;
 		    }
 		    else
 		    {
@@ -164,28 +164,28 @@ extern "C" {
 	mu_report_test_suite_report(#test_suite, test_suite##_tests_array, success, total); \
     } while(0)
 
-#define MU_RECORD(file, line) do { \
-    if (desc->failed < MAX_REPORTED_FAILED) {   \
-        desc->detail[desc->failed] = line ; \
-        desc->filename = file ; \
-    }   \
-} while (0)
+#define MU_RECORD(file, line) do {			\
+	if (desc->failed < MAX_REPORTED_FAILED) {	\
+	    desc->detail[desc->failed] = line ;		\
+	    desc->filename = file ;			\
+	}						\
+    } while (0)
 
 /* Assertion macro */
-#define MU_ASSERT_NOPRINT(test) do {			\
-	if ( (test) )					\
-	    desc->success++;				\
-    desc->performed++;					\
-    } while (0)						\
+#define MU_ASSERT_NOPRINT(test) do {		\
+	if ( (test) )				\
+	    desc->success++;			\
+	desc->performed++;			\
+    } while (0)					\
 
-#define MU_ASSERT_PRINT(test,file,line) do {		\
-	if ( (test) )					\
-	    desc->success++;				\
-	else {						\
-	    MU_RECORD(file, line) ;	\
-        desc->failed++ ;    \
-	}						\
-	desc->performed++;				\
+#define MU_ASSERT_PRINT(test,file,line) do {	\
+	if ( (test) )				\
+	    desc->success++;			\
+	else {					\
+	    MU_RECORD(file, line) ;		\
+	    desc->failed++ ;			\
+	}					\
+	desc->performed++;			\
     } while (0)
 
 #ifdef MU_ASSERT_USE_PRINT
