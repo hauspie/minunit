@@ -61,7 +61,17 @@ extern "C" {
    #define INIT_FAILED
 #endif
 
-/* 0,NULL,-1,-1,-1,-1,-1    */
+/* Needed to compile even with -ansi -pedantic -Wall -W -Werror */
+#ifdef __GNUC__
+  #ifdef __STRICT_ANSI__
+    #define INLINE_FUNC static __inline__
+  #else
+    #define INLINE_FUNC static inline
+  #endif
+#else
+  #define INLINE_FUNC static
+#endif
+
 /* Type for test suite arrays */
     struct mu_test_desc;
     typedef void (*mu_test_func)(struct mu_test_desc *desc);
@@ -92,7 +102,7 @@ extern "C" {
 #define MU_TEST_SUITE_END {NULL,NULL,0,0,INIT_FAILED}
 #define MU_DESC_SUCCESS(d) ((d)->performed != 0 && ((d)->success == (d)->performed))
 
-    static int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
+    INLINE_FUNC int mu_run_test_suite(mu_test_func setup, mu_test_func tear_down, struct mu_test_desc *tests_array, int *out_success, int *out_total)
     {
 	int i;
 	int success = 0;
@@ -118,7 +128,7 @@ extern "C" {
 	return -1;
     }
 
-    static void mu_report_test_suite_report(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
+    INLINE_FUNC void mu_report_test_suite_report(const char *suite_name, struct mu_test_desc *tests_array, int success, int total)
     {
 	MU_PRINT_STR("Suite ");
 	MU_PRINT_STR(suite_name);

@@ -1,4 +1,4 @@
-CFLAGS=-Wall -Werror -pedantic
+CFLAGS=-Wall -Werror -pedantic -ansi 
 
 EXE=main
 SRCS=$(wildcard *.c)
